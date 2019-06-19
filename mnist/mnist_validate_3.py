@@ -11,19 +11,21 @@ import os
 
 ### One way of loading ###
 #Load sample inputs and outputs
-# from mnist import MNIST
+from mnist import MNIST
 
-# mndata = MNIST('samples')
+mndata = MNIST('samples')
 
-# images, labels = mndata.load_testing()
+images, labels = mndata.load_testing()
 
-# print (type(images[0]))
-# print (type(images))
-# print (images[0])
-# print (type(labels))
+print (mndata.display(images[0]))
+print (mndata.display(images[1]))
+print (labels[0])
+print (labels[1])
+#print (labels)
 
-
-### ANother way
+print (type(images[0]))
+#print (images[0])
+### Another way
 import gzip
 import numpy as np
 
@@ -31,56 +33,61 @@ import numpy as np
 f = gzip.open('t10k-images-idx3-ubyte.gz', 'rb')
 
 image_size = 28
-num_images = 1
-
-buf = f.read(image_size * image_size * num_images)
-data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
-
-m = np.zeros([1,1,28,28], dtype=np.float32)
-m[0,0,:,:] = np.reshape(data, ( 28, 28))
-print(m.shape)
-print (m.dtype)
-print (type(data))
-
+num_images = 2
 
 myinputs = []
+buf = f.read(image_size * image_size * num_images)
+for i in range(num_images):
+    data = np.frombuffer(buf, dtype=np.uint8, count=image_size*image_size, offset=i ).astype(np.float32)
+    m = np.zeros([1,1,28,28], dtype=np.float32)
+    m[0,0,:,:] = np.reshape(data, ( 28, 28))
+    myinputs.append(m)
+
+print (myinputs[1])
+
+ref_outputs = []
 
 
-myinputs.append(m)
-print (myinputs)
+# rf = gzip.open('t10k-labels-idx1-ubyte.gz', 'rb')
+# buf = rf.read(image_size * image_size * num_images)
+# for i in range(num_images):
+#     data = np.frombuffer(buf, dtype=np.uint8, count=image_size*image_size, offset=i ).astype(np.float32)
+#     m = np.zeros([1,1,28,28], dtype=np.float32)
+#     m[0,0,:,:] = np.reshape(data, ( 28, 28))
+#     ref_outputs.append(m)
 
-#print (data)
-#print(np.reshape(data,(28, 28)))
-# reference outputs
 
-f = gzip.open('t10k-labels-idx1-ubyte.gz', 'rb')
+#for ref_o, o in zip(ref_outputs, myinputs):
+#    np.testing.assert_almost_equal(ref_o, o, 2)
 
-ref_num_images = 2
-
-ref_buf = f.read(image_size * image_size * ref_num_images)
-ref_data = np.frombuffer(ref_buf, dtype=np.uint8).astype(np.float32)
-
-rm = np.zeros([1,2,28,28], dtype=np.float32)
-rm[0,:,:,:] = np.reshape(ref_data, ( 2, 28, 28))
-print(rm.shape)
-#print(rm)
-#test = numpy_helper.to_array(rm)
-#print (test.shape)
-
-print (type(ref_data))
-#print (ref_data)
-#print(np.reshape(ref_data,(28, 28)))
-
-# #Inference using ONNX Runtime
-
-# Run the model on the backend
 session = onnxruntime.InferenceSession('model.onnx', None)
 
 input_name = session.get_inputs()[0].name  
 
 print('Input Name:', input_name)
-outputs = session.run([], {input_name: m})[0] 
+#outputs = session.run([], {input_name: m})[0] 
+outputs = [session.run([], {input_name: i})[0] for i in myinputs]
+print (outputs[0])
+print (int(np.argmax(np.array(outputs[0]).squeeze(), axis=0)))
+print (outputs[1])
+print (int(np.argmax(np.array(outputs[1]).squeeze(), axis=0)))
 
+
+#print (ref_outputs)
+# for ref_o, o in zip(labels, outputs):
+#     actual_o = int(np.argmax(np.array(o).squeeze(), axis=0))
+#     print (o)
+#     print (ref_o)
+#     print (actual_o)
+    #np.testing.assert_almost_equal(ref_o, o, 2)
+    # my_dict['actual_output'][count] = o.tolist()
+    # my_dict['actual_output'][count].append(int(np.argmax(np.array(o).squeeze(), axis=0)))
+    # my_dict['ref_output'][count] = ref_o.tolist()
+    # my_dict['ref_output'][count].append(int(np.argmax(np.array(ref_o).squeeze(), axis=0)))
+    #count +=1
+
+# with open ('C:\\output\\result_3.json', 'w') as json_file:
+#     json.dump(my_dict, json_file)
 # print (outputs)
 # print(int(np.argmax(np.array(outputs).squeeze(), axis=0)))
 # import struct

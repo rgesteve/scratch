@@ -6,39 +6,55 @@ from onnx import numpy_helper
 import urllib.request
 import time
 import json
-#Load sample inputs and outputs
-input_filename = sys.argv[1]
-output_filename = sys.argv[2]
-print (input_filename + " " + output_filename)
-test_data_dir = 'test_data_set'
-test_data_num = 3
-
-import glob
+import sys
 import os
 
+from os.path import isfile, join
+import glob
+
+
+
+#Load sample inputs and outputs
+input_dir = sys.argv[1]
+output_dir = sys.argv[2]
+print (input_dir + " " + output_dir)
 # Load inputs
+
+
+input_files = [join(input_dir,f) for f in os.listdir(input_dir) if isfile(join(input_dir, f))]
+output_files = [join(output_dir,f)  for f in os.listdir(output_dir) if isfile(join(output_dir, f))]
+
+
 inputs = []
-for i in range(test_data_num):
-    input_file = os.path.join(test_data_dir + '_{}'.format(i), 'input_0.pb')
+for input_file in input_files:
     tensor = onnx.TensorProto()
     with open(input_file, 'rb') as f:
         print (type(f))
         tensor.ParseFromString(f.read())
+        #print(numpy_helper.to_array(tensor))
+        test = numpy_helper.to_array(tensor)
+        print (test.shape)
+        #print (test[0,0,:,:])
+        #print(type(numpy_helper.to_array(tensor)))
+        print ("-----------------------------")
+        print (test.dtype)
+        #print(tensor)
         inputs.append(numpy_helper.to_array(tensor))
 
 #print('Loaded {} inputs successfully.'.format(test_data_num))
         
 # Load reference outputs
+print(inputs)
 
 ref_outputs = []
-for i in range(test_data_num):
-    output_file = os.path.join(test_data_dir + '_{}'.format(i), 'output_0.pb')
+for output_file in output_files:
     tensor = onnx.TensorProto()
     with open(output_file, 'rb') as f:
         tensor.ParseFromString(f.read())    
+        test = numpy_helper.to_array(tensor)
+        print (test.shape)
+        print (test)
         ref_outputs.append(numpy_helper.to_array(tensor))
-        
-#print('Loaded {} reference outputs successfully.'.format(test_data_num))
 
 #Inference using ONNX Runtime
 
@@ -49,13 +65,12 @@ session = onnxruntime.InferenceSession('model.onnx', None)
 
 # get the name of the first input of the model
 input_name = session.get_inputs()[0].name  
-#print('Input Name:', input_name)
+
 
 start = time.time()
 
-outputs = [session.run([], {input_name: inputs[i]})[0] for i in range(test_data_num)]
+outputs = [session.run([], {input_name: i})[0] for i in inputs]
 
-#end timer
 end = time.time()
 
 #print (outputs)
@@ -73,10 +88,6 @@ for i in ref_outputs:
     ref_result.append(int(np.argmax(np.array(i).squeeze(), axis=0)))
 
 ref_outputs_dict = {"result": ref_result}
-#print (ref_result)
-
-#print('Predicted {} results.'.format(len(outputs)))
-
 
 my_dict = { 'actual_output' : {}, 'ref_output' : {}}
 

@@ -30,46 +30,27 @@ import numpy as np
 #test inputs
 f = gzip.open('t10k-images-idx3-ubyte.gz', 'rb')
 
-image_size = 28
+image_size=28
 num_images = 1
 
 buf = f.read(image_size * image_size * num_images)
 data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
 
-m = np.zeros([1,1,28,28], dtype=np.float32)
-m[0,0,:,:] = np.reshape(data, ( 28, 28))
-print(m.shape)
-print (m.dtype)
 print (type(data))
+print (data)
 
-
-myinputs = []
-
-
-myinputs.append(m)
-print (myinputs)
-
-#print (data)
-#print(np.reshape(data,(28, 28)))
 # reference outputs
 
 f = gzip.open('t10k-labels-idx1-ubyte.gz', 'rb')
 
-ref_num_images = 2
+ref_num_images = 10
 
 ref_buf = f.read(image_size * image_size * ref_num_images)
 ref_data = np.frombuffer(ref_buf, dtype=np.uint8).astype(np.float32)
 
-rm = np.zeros([1,2,28,28], dtype=np.float32)
-rm[0,:,:,:] = np.reshape(ref_data, ( 2, 28, 28))
-print(rm.shape)
-#print(rm)
-#test = numpy_helper.to_array(rm)
-#print (test.shape)
-
 print (type(ref_data))
-#print (ref_data)
-#print(np.reshape(ref_data,(28, 28)))
+print (ref_data)
+
 
 # #Inference using ONNX Runtime
 
@@ -79,7 +60,7 @@ session = onnxruntime.InferenceSession('model.onnx', None)
 input_name = session.get_inputs()[0].name  
 
 print('Input Name:', input_name)
-outputs = session.run([], {input_name: m})[0] 
+outputs = session.run([], {input_name: data})[0] 
 
 # print (outputs)
 # print(int(np.argmax(np.array(outputs).squeeze(), axis=0)))
